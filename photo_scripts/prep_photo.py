@@ -1,4 +1,4 @@
-﻿"""Prepare a photo for lithophane use: grayscale, resize, optional contrast boost.
+"""Prepare a photo for lithophane use: grayscale, resize, optional contrast boost.
 
 Usage: python prep_photo.py input.jpg output.png --width 1000 --contrast 1.3
 """

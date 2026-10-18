@@ -1,4 +1,4 @@
-﻿# Defaults shared by the scripts. CLI flags override these.
+# Defaults shared by the scripts. CLI flags override these.
 panel:
   width_mm: 100        # printed panel width (height follows image aspect ratio)
   min_thickness_mm: 0.6   # brightest areas (most light passes)

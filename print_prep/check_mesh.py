@@ -1,4 +1,4 @@
-﻿"""Sanity-check an STL before slicing: watertight, size, volume, thin features.
+"""Sanity-check an STL before slicing: watertight, size, volume, thin features.
 
 Usage: python check_mesh.py models/stl/pic.stl
 """

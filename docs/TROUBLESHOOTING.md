@@ -10,6 +10,6 @@
 | Panel wobbles or ribs on the print | Tall thin part moving while printing | Add a brim, slow to 40 mm/s, avoid drafts |
 | Uneven glow, hot spots | Light too close or point-like | Move the light back or use a diffuser sheet behind the panel |
 | Slicer says non-manifold / open edges | Corrupt mesh | Run `check_mesh.py`, regenerate the STL, or repair in the slicer |
-| Panel won't fit the frame | Slot is smaller than the real panel | Use the size `check_mesh.py` reports (the border adds to the width); raise `CLEAR` in `litho_frame.py` |
+| Panel won't fit the frame | Slot is smaller than the real panel | Re-run `litho_frame.py` so it re-reads the panel STL; raise `clearance_mm` in `config.yaml` |
 | STL is huge or slicer is slow | Resolution finer than needed | Raise `pixel_mm` (0.25 to 0.4) |
 | `ModuleNotFoundError` | Dependencies missing | `pip install -r requirements.txt` |

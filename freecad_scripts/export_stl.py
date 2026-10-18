@@ -1,4 +1,4 @@
-﻿# Run inside FreeCAD (Macro editor) or: FreeCADCmd export_stl.py
+# Run inside FreeCAD (Macro editor) or: FreeCADCmd export_stl.py
 # Exports every visible solid in the active document to models/stl/.
 import os
 import FreeCAD

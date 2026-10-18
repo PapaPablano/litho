@@ -1,4 +1,4 @@
-﻿"""Convert a (preferably prepped) photo into a lithophane STL.
+"""Convert a (preferably prepped) photo into a lithophane STL.
 
 Dark pixels become thick, bright pixels thin, so light shows the image.
 

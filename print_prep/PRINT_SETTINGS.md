@@ -1,4 +1,4 @@
-﻿# Lithophane print settings
+# Lithophane print settings
 
 Starting points; calibrate with a test strip on your own filament.
 

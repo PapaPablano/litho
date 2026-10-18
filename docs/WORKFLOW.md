@@ -9,7 +9,7 @@
    `python photo_scripts/make_lithophane.py photos/output/pic.png models/stl/pic.stl`
 5. **Check it.**
    `python print_prep/check_mesh.py models/stl/pic.stl` should say watertight and show the size you expect.
-6. **Make the frame (optional).** Set the panel size in `freecad_scripts/litho_frame.py` to the size `check_mesh.py` reported, then run it in FreeCAD.
+6. **Make the frame (optional).** Run `freecad_scripts/litho_frame.py` in FreeCAD. It reads the panel size from the newest STL in `models/stl` (or set `LITHO_PANEL` to a specific file) and takes frame settings from `config.yaml`. Headless: `FreeCADCmd -c "exec(open('freecad_scripts/litho_frame.py').read())"`.
 7. **Slice and print.** Use `print_prep/PRINT_SETTINGS.md`. Print the panel standing vertical, with a brim.
 8. **Light it.** Use a white LED backlight 1-3 cm behind the panel.
 

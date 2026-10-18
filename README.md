@@ -1,4 +1,4 @@
-﻿# Litho Projects
+# Litho Projects
 
 Photo editing, FreeCAD scripting, and 3D-print prep (lithophanes etc.).
 
@@ -21,4 +21,4 @@ Photo editing, FreeCAD scripting, and 3D-print prep (lithophanes etc.).
     python print_prep/check_mesh.py models/stl/pic.stl
 
 Defaults live in `config.yaml`. Print settings: `print_prep/PRINT_SETTINGS.md`.
-Frame/stand: edit the values at the top of `freecad_scripts/litho_frame.py`, then run it in FreeCAD.
+Frame/stand: run `freecad_scripts/litho_frame.py` in FreeCAD; it sizes itself from the newest panel STL.
