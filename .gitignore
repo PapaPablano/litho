@@ -1,0 +1,9 @@
+﻿photos/output/
+models/stl/
+*.stl
+*.3mf
+__pycache__/
+*.FCStd1
+*.FCBak
+photos/input/*
+!photos/input/.gitkeep
