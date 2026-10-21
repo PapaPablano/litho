@@ -12,3 +12,7 @@ frame:
   clearance_mm: 0.4    # extra slot room for the panel
   depth_mm: 12.0       # front-to-back depth of the frame
   base_mm: 6.0         # height of the stand foot
+model:
+  scale_denominator: 32   # print scale 1:N for image-to-3D models
+  tolerance_pct: 2.0      # each overall dimension must land within this of its target
+  max_axis_stretch_pct: 5.0   # largest per-axis stretch the fit step may apply before failing
