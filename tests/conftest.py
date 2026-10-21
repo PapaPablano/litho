@@ -22,13 +22,16 @@ _FACES = [
 ]
 
 
-def make_box(sx, sy, sz, *, drop_face=False, inverted=False, offset=(0.0, 0.0, 0.0)):
+def make_box(sx, sy, sz, *, drop_face=False, inverted=False, flip_one=False, offset=(0.0, 0.0, 0.0)):
     """Return a numpy-stl Mesh of a box with the given size in mm."""
     faces = list(_FACES)
     if drop_face:
         faces = faces[2:]
     if inverted:
         faces = [(a, c, b) for a, b, c in faces]
+    if flip_one:                                  # reverse a single triangle: edges stay shared, winding breaks
+        a, b, c = faces[-1]
+        faces[-1] = (a, c, b)
     verts = _CORNERS * np.array([sx, sy, sz]) + np.array(offset)
     m = mesh.Mesh(np.zeros(len(faces), dtype=mesh.Mesh.dtype))
     for i, f in enumerate(faces):

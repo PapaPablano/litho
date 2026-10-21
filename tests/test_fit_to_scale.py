@@ -114,3 +114,9 @@ def test_cli_dimension_failure_exits_2_and_flags_a_stale_output(box_stl, tmp_pat
     t.write_text("length_mm: 4000\nwidth_mm: 1600\nheight_mm: 1200\n", encoding="utf-8")
     r = _cli(raw, "--subject", t, "--out", out)
     assert r.returncode == 2 and "earlier run" in r.stdout
+
+
+def test_one_reversed_triangle_is_written_but_not_print_ready(box_stl, tmp_path):
+    r, out = _fit(box_stl, tmp_path, (125, 50, 37.5), flip_one=True)
+    assert out.exists() and r.dimensions_ok
+    assert not r.print_ready and r.exit_code == 1

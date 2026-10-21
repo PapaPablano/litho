@@ -99,7 +99,8 @@ def run(src, t, dst):
     out.save(str(dst))
     report.wrote = True
     report.analysis = check_mesh.analyze(str(dst))
-    report.print_ready = report.analysis["open_edges"] == 0 and report.analysis["volume"] > 0
+    a = report.analysis
+    report.print_ready = a["open_edges"] == 0 and a["flipped_edges"] == 0 and a["volume"] > 0
     return report
 
 
@@ -118,7 +119,8 @@ def print_report(r, src, dst):
         return
     print(f"Wrote {dst}")
     a = r.analysis
-    print(f"Watertight: {'yes' if a['open_edges'] == 0 else 'NO'}   Volume: {a['volume'] / 1000:.2f} cm^3")
+    print(f"Watertight: {'yes' if a['open_edges'] == 0 else 'NO'}   Winding: {'ok' if a['flipped_edges'] == 0 else 'NO'}"
+          f"   Volume: {a['volume'] / 1000:.2f} cm^3")
     print("Print-ready." if r.print_ready else "NOT print-ready: repair the mesh before slicing.")
 
 
