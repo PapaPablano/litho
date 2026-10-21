@@ -80,12 +80,40 @@ def orient(mesh, up="z"):
     return _align_yaw(mesh)
 
 
-def postprocess(mesh, up="z"):
+WORKING_LENGTH = 100.0   # clean-up runs at a mm-like size so welding tolerances mean the same as in check_mesh
+WELD_TOLERANCE = 0.005   # vertices closer than this (in those units) are merged
+
+
+def normalize_scale(mesh, length=WORKING_LENGTH):
+    """Scale so the longest extent is `length`. The true size is set later by fit_to_scale."""
     mesh = mesh.copy()
-    mesh.update_faces(mesh.nondegenerate_faces())
-    mesh.remove_unreferenced_vertices()
-    mesh.merge_vertices()
-    return orient(fill_holes(keep_largest(mesh)), up=up)
+    mesh.apply_scale(length / mesh.extents.max())
+    return mesh
+
+
+def repair(mesh):
+    """Weld sliver vertices and close the gaps marching cubes leaves, so the STL is watertight.
+
+    Plain face deletion opens new holes, so this uses MeshLab's merge-and-repair filters.
+    """
+    import pymeshlab
+    import trimesh
+    ms = pymeshlab.MeshSet()
+    ms.add_mesh(pymeshlab.Mesh(vertex_matrix=mesh.vertices, face_matrix=mesh.faces))
+    ms.meshing_merge_close_vertices(threshold=pymeshlab.PureValue(WELD_TOLERANCE))
+    ms.meshing_remove_duplicate_faces()
+    ms.meshing_remove_null_faces()
+    ms.meshing_repair_non_manifold_edges(method=0)
+    ms.meshing_close_holes(maxholesize=200)
+    out = ms.current_mesh()
+    return trimesh.Trimesh(out.vertex_matrix(), out.face_matrix(), process=False)
+
+
+def postprocess(mesh, up="z"):
+    """Largest piece -> mm-sized -> welded and repaired -> small holes filled -> Z-up, length on X."""
+    mesh = repair(normalize_scale(keep_largest(mesh)))
+    mesh = fill_holes(keep_largest(mesh))
+    return orient(mesh, up=up)
 
 
 # ---- generation backends (need the AI environment: torch + hy3dgen) ----
