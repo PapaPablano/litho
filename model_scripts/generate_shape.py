@@ -138,7 +138,7 @@ def _cutout(path, remover=None):
 def load_views(folder):
     """Read each required view as RGBA, removing the background where the image has no transparency."""
     import check_views
-    found = check_views._find(folder)
+    found = check_views.find_views(folder)
     views, remover = {}, None
     for name in check_views.REQUIRED:
         views[name], remover = _cutout(found[name], remover)
@@ -165,7 +165,7 @@ def run_hunyuan_mv(views, steps=30, octree=256, seed=12345, low_vram=False):
 def load_single_view(folder, view):
     """One view as RGBA; `view` is a name like 'left' in the folder, or an image path."""
     import check_views
-    path = check_views._find(folder).get(view) if Path(folder).is_dir() else None
+    path = check_views.find_views(folder).get(view) if Path(folder).is_dir() else None
     if path is None and Path(view).is_file():
         path = Path(view)
     if path is None:

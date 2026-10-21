@@ -37,7 +37,7 @@ class Result:
         return not self.problems
 
 
-def _find(folder):
+def find_views(folder):
     found = {}
     for p in sorted(Path(folder).iterdir()):
         if p.suffix.lower() in EXTENSIONS and p.stem.lower() in REQUIRED + OPTIONAL:
@@ -45,21 +45,25 @@ def _find(folder):
     return found
 
 
-def _border_is_plain(img):
-    a = np.asarray(img.convert("RGB"), dtype=np.int16)
-    h, w, _ = a.shape
+def border_pixels(a):
+    """The outer frame of an H x W x 3 int array as an N x 3 array of colours."""
+    h, w = a.shape[:2]
     m = max(2, min(h, w) // 50)
-    border = np.concatenate([
+    return np.concatenate([
         a[:m].reshape(-1, 3), a[-m:].reshape(-1, 3),
         a[:, :m].reshape(-1, 3), a[:, -m:].reshape(-1, 3),
     ])
+
+
+def _border_is_plain(img):
+    border = border_pixels(np.asarray(img.convert("RGB"), dtype=np.int16))
     typical = np.median(border, axis=0)
     close = (np.abs(border - typical).max(axis=1) <= PLAIN_TOLERANCE).mean()
     return close >= PLAIN_FRACTION
 
 
 def check(folder):
-    r = Result(found=_find(folder))
+    r = Result(found=find_views(folder))
     missing = [n for n in REQUIRED if n not in r.found]
     if missing:
         r.problems.append(

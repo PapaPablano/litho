@@ -60,12 +60,15 @@ def test_yawed_mesh_is_aligned_so_its_length_lies_along_x():
 
 
 def test_repair_closes_a_sliver_gap_that_check_mesh_would_flag(tmp_path):
-    """A hairline crack (vertices 0.001 apart) is welded so the exported STL is watertight."""
+    """A hairline crack (two copies of one corner 0.001 apart) is welded so the STL is watertight."""
     import check_mesh
     b = _box((100, 40, 30))
-    v = b.vertices.copy()
-    v[0] += 0.001                      # nudge one corner so two copies no longer coincide
-    cracked = trimesh.Trimesh(np.vstack([v, b.vertices[:1]]), b.faces, process=False)
+    verts = np.vstack([b.vertices, b.vertices[:1] + 0.001])      # vertex 8: a near-copy of vertex 0
+    faces = b.faces.copy()
+    first_use = np.argwhere(faces == 0)[0]
+    faces[first_use[0], first_use[1]] = 8                         # one face now meets the corner at the copy
+    cracked = trimesh.Trimesh(verts, faces, process=False)
+    assert not cracked.is_watertight                              # the crack is real before repair
     out = gs.postprocess(cracked, up="z")
     path = tmp_path / "out.stl"
     out.export(str(path))

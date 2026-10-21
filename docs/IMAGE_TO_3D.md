@@ -44,7 +44,7 @@ The generator runs in its own Python environment so the lithophane scripts stay 
     python model_scripts/silhouette_compare.py models/stl/countryman_1to32.stl "photos/input/<folder>"
     python print_prep/check_mesh.py models/stl/countryman_1to32.stl
 
-`fit_to_scale` exits 0 when every dimension is within the tolerance and the mesh is print-ready, 1 when the mesh is written but has open edges, and 2 when a dimension cannot be brought within tolerance (nothing is written).
+`fit_to_scale` exits 0 when every dimension is within the tolerance and the mesh is print-ready, 1 when the mesh is written but has open edges, 2 when a dimension cannot be brought within tolerance (nothing is written; an older file at the output path is left alone and flagged as stale), and 3 for bad input such as a wrong orientation or an unreadable subject file.
 For another object, add `model_scripts/subjects/<name>.yaml` with `length_mm`, `width_mm`, `height_mm` and pass `--subject <name>` and `--scale <N>`.
 
 ## Feasibility findings (RTX 5060 Laptop, 8 GB, Windows, Python 3.12)

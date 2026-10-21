@@ -6,7 +6,7 @@ checked. A small per-axis stretch fixes a width or height that misses the tolera
 beyond the cap the run fails and writes nothing.
 
 Usage: python fit_to_scale.py models/raw/car.stl --subject mini_countryman [--scale 32] [--out models/stl/car.stl]
-Exit codes: 0 ok, 1 written but not print-ready, 2 dimensions out of tolerance.
+Exit codes: 0 ok, 1 written but not print-ready, 2 dimensions out of tolerance, 3 bad input (orientation, subject).
 """
 import argparse
 import sys
@@ -113,6 +113,8 @@ def print_report(r, src, dst):
     if not r.dimensions_ok:
         bad = ", ".join(d.name for d in r.dims if not d.ok)
         print(f"FAILED: {bad} outside tolerance and not correctable within the stretch cap. Nothing written.")
+        if Path(dst).exists():
+            print(f"NOTE: {dst} is from an earlier run and was NOT updated; do not print it for this mesh.")
         return
     print(f"Wrote {dst}")
     a = r.analysis
@@ -130,13 +132,20 @@ def main():
     p.add_argument("--width-mm", type=float)
     p.add_argument("--height-mm", type=float)
     a = p.parse_args()
-    t = subject.targets(a.subject, denominator=a.scale,
-                        length_mm=a.length_mm, width_mm=a.width_mm, height_mm=a.height_mm)
+    try:
+        t = subject.targets(a.subject, denominator=a.scale,
+                            length_mm=a.length_mm, width_mm=a.width_mm, height_mm=a.height_mm)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 3
     dst = a.out or str(ROOT / "models" / "stl" / f"{Path(a.src).stem}_1to{t.denominator:g}.stl")
     try:
         report = run(a.src, t, dst)
     except ValueError as e:
-        sys.exit(f"ERROR: {e}")
+        print(f"ERROR: {e}", file=sys.stderr)
+        if Path(dst).exists():
+            print(f"NOTE: {dst} is from an earlier run and was NOT updated.", file=sys.stderr)
+        return 3
     print_report(report, a.src, dst)
     return report.exit_code
 

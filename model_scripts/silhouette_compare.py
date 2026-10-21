@@ -47,9 +47,7 @@ def mesh_mask(vectors, view, px=400):
 def view_mask(path):
     """Subject silhouette of a view image on a plain background, cropped to its bounding box."""
     a = np.asarray(Image.open(path).convert("RGB"), dtype=np.int16)
-    m = max(2, min(a.shape[:2]) // 50)
-    border = np.concatenate([a[:m].reshape(-1, 3), a[-m:].reshape(-1, 3),
-                             a[:, :m].reshape(-1, 3), a[:, -m:].reshape(-1, 3)])
+    border = check_views.border_pixels(a)
     typical = np.median(border, axis=0)
     return _crop(np.abs(a - typical).max(axis=2) > BG_TOLERANCE)
 
@@ -70,7 +68,7 @@ def _iou(a, b):
 
 def compare(vectors, views_dir, out_dir, stem, px=400):
     """Write overlays for every view present in `views_dir`; return {view: overlap fraction}."""
-    found = check_views._find(views_dir)
+    found = check_views.find_views(views_dir)
     out_dir = Path(out_dir)
     results = {}
     for view in AXES:
