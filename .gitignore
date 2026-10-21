@@ -7,3 +7,5 @@ __pycache__/
 *.FCBak
 photos/input/*
 !photos/input/.gitkeep
+tools/
+models/raw/
