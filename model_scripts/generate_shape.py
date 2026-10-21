@@ -123,22 +123,25 @@ def postprocess(mesh, up="z"):
 HUNYUAN_UP = "y"
 
 
-def load_views(folder):
-    """Read each view as RGBA, removing the background when the image has no transparency."""
+def _cutout(path, remover=None):
+    """Read an image as RGBA; if it is fully opaque, remove the background. Returns (image, remover)."""
     from PIL import Image
+    img = Image.open(path).convert("RGBA")
+    if img.getextrema()[3][0] == 255:        # fully opaque: no cut-out supplied
+        if remover is None:
+            from hy3dgen.rembg import BackgroundRemover
+            remover = BackgroundRemover()
+        img = remover(img.convert("RGB"))
+    return img, remover
 
+
+def load_views(folder):
+    """Read each required view as RGBA, removing the background where the image has no transparency."""
     import check_views
     found = check_views._find(folder)
-    remover = None
-    views = {}
+    views, remover = {}, None
     for name in check_views.REQUIRED:
-        img = Image.open(found[name]).convert("RGBA")
-        if img.getextrema()[3][0] == 255:        # fully opaque: no cut-out supplied
-            if remover is None:
-                from hy3dgen.rembg import BackgroundRemover
-                remover = BackgroundRemover()
-            img = remover(img.convert("RGB"))
-        views[name] = img
+        views[name], remover = _cutout(found[name], remover)
     return views
 
 
@@ -160,20 +163,14 @@ def run_hunyuan_mv(views, steps=30, octree=256, seed=12345, low_vram=False):
 
 
 def load_single_view(folder, view):
-    """One view as RGBA (background removed if needed); `view` is a name like 'left' or an image path."""
-    from PIL import Image
-
+    """One view as RGBA; `view` is a name like 'left' in the folder, or an image path."""
     import check_views
     path = check_views._find(folder).get(view) if Path(folder).is_dir() else None
     if path is None and Path(view).is_file():
         path = Path(view)
     if path is None:
         raise FileNotFoundError(f"no '{view}' image in {folder}")
-    img = Image.open(path).convert("RGBA")
-    if img.getextrema()[3][0] == 255:
-        from hy3dgen.rembg import BackgroundRemover
-        img = BackgroundRemover()(img.convert("RGB"))
-    return img
+    return _cutout(path)[0]
 
 
 def run_hunyuan_single(image, steps=30, octree=256, seed=12345):
