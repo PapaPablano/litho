@@ -55,3 +55,18 @@ For another object, add `model_scripts/subjects/<name>.yaml` with `length_mm`, `
 - **Views accepted:** `front`, `left`, `back`, and `right`.
 - **Output axes:** the generator output is Y-up. `generate_shape.py` rotates it to Z-up and yaws it so the length lies along X, which also fixes the diagonal yaw seen when the input views are 3/4 angles.
 - **Not watertight as generated:** the raw mesh comes out as several pieces. `generate_shape.py` keeps the largest, fills small holes, and the result was watertight in the spike.
+
+## Single-image baseline
+
+To compare against a one-view result:
+
+    tools/venv-gen/Scripts/python model_scripts/generate_shape.py "photos/input/<folder>" --name countryman_baseline --baseline left
+
+`--baseline` takes a view name in the folder (or an image path) and needs no complete view set. It runs Hunyuan3D-2mini (0.6B), which is already installed with the multiview model, so it needs no second AI stack. TripoSR was the originally proposed baseline; it needs a compiled extension on Windows and was not installed. The output goes through the same cleanup, `fit_to_scale`, and `silhouette_compare` as the multiview mesh.
+
+On the three stand-in screenshots used for the feasibility run (3/4 views, so not a fair test), proportions came out as length : width : height of 1 : 0.43 : 0.36 for multiview and 1 : 0.46 : 0.38 for the single-image baseline, against the real 1 : 0.42 : 0.37. The multiview mesh fit with a 3.8% width stretch. The baseline missed the width by 10.7% and was refused, which is the accuracy check working as intended.
+
+## Status
+
+Verified on this machine: install, generation (about 3 minutes, 5.6 GiB peak), cleanup to a watertight mesh, fit to the 1:32 Countryman dimensions, and the print-ready check.
+Not yet done: a run on clean straight-on views. The seven existing screenshots fail `check_views`, so recapture front, back, left, and right views and run the sequence above to get the printable model.

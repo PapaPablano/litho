@@ -70,3 +70,14 @@ def test_repair_closes_a_sliver_gap_that_check_mesh_would_flag(tmp_path):
     path = tmp_path / "out.stl"
     out.export(str(path))
     assert check_mesh.analyze(str(path))["open_edges"] == 0
+
+
+def test_baseline_without_a_view_is_a_usage_error():
+    with pytest.raises(SystemExit) as e:
+        gs.main(["views_folder", "--name", "x", "--baseline"])
+    assert e.value.code == 2
+
+
+def test_baseline_with_a_missing_view_reports_it_and_exits_1(tmp_path, capsys):
+    assert gs.main([str(tmp_path), "--name", "x", "--baseline", "left"]) == 1
+    assert "left" in capsys.readouterr().out

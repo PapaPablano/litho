@@ -159,9 +159,43 @@ def run_hunyuan_mv(views, steps=30, octree=256, seed=12345, low_vram=False):
     )[0]
 
 
+def load_single_view(folder, view):
+    """One view as RGBA (background removed if needed); `view` is a name like 'left' or an image path."""
+    from PIL import Image
+
+    import check_views
+    path = check_views._find(folder).get(view) if Path(folder).is_dir() else None
+    if path is None and Path(view).is_file():
+        path = Path(view)
+    if path is None:
+        raise FileNotFoundError(f"no '{view}' image in {folder}")
+    img = Image.open(path).convert("RGBA")
+    if img.getextrema()[3][0] == 255:
+        from hy3dgen.rembg import BackgroundRemover
+        img = BackgroundRemover()(img.convert("RGB"))
+    return img
+
+
+def run_hunyuan_single(image, steps=30, octree=256, seed=12345):
+    """Single-image baseline with Hunyuan3D-2mini (0.6B); returns a trimesh."""
+    import torch
+    from hy3dgen.shapegen import Hunyuan3DDiTFlowMatchingPipeline
+
+    pipe = Hunyuan3DDiTFlowMatchingPipeline.from_pretrained(
+        "tencent/Hunyuan3D-2mini", subfolder="hunyuan3d-dit-v2-mini", variant="fp16", device="cuda",
+    )
+    return pipe(
+        image=image, num_inference_steps=steps, octree_resolution=octree, num_chunks=8000,
+        generator=torch.manual_seed(seed), output_type="trimesh",
+    )[0]
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("views", help="folder with front/back/left/right images")
+    p.add_argument("--baseline", metavar="VIEW",
+                   help="single-image comparison run on one view (a name like 'left', or an image path); "
+                        "needs no complete view set")
     p.add_argument("--name", required=True, help="output name; writes models/raw/<name>.stl")
     p.add_argument("--out", help="output STL path (default models/raw/<name>.stl)")
     p.add_argument("--steps", type=int, default=30)
@@ -171,14 +205,21 @@ def main(argv=None):
     p.add_argument("--up", default=HUNYUAN_UP, choices=sorted(_UP_TO_Z), help="up axis of the generator output")
     a = p.parse_args(argv)
 
-    import check_views
-    check = check_views.check(a.views)
-    if not check.ok:
-        for line in check.problems:
-            print(line)
-        return 1
-
-    mesh = run_hunyuan_mv(load_views(a.views), a.steps, a.octree, a.seed, a.low_vram)
+    if a.baseline:
+        try:
+            image = load_single_view(a.views, a.baseline)
+        except FileNotFoundError as e:
+            print(e)
+            return 1
+        mesh = run_hunyuan_single(image, a.steps, a.octree, a.seed)
+    else:
+        import check_views
+        check = check_views.check(a.views)
+        if not check.ok:
+            for line in check.problems:
+                print(line)
+            return 1
+        mesh = run_hunyuan_mv(load_views(a.views), a.steps, a.octree, a.seed, a.low_vram)
     mesh = postprocess(mesh, up=a.up)
     out = Path(a.out) if a.out else default_out(a.name)
     out.parent.mkdir(parents=True, exist_ok=True)

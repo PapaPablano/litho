@@ -15,3 +15,6 @@
 
 ## Iterating
 Change one thing at a time (contrast, gamma, thickness range) and keep notes next to the print in `print_prep/`. Small test prints of a cropped face or detail area save filament.
+
+## Freestanding models from pictures
+For a 3D model rather than a lithophane, follow `docs/IMAGE_TO_3D.md`: capture straight-on views, generate a shape locally, fit it to the object's real dimensions at a print scale, and check it with `print_prep/check_mesh.py` before slicing.
