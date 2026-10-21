@@ -1,0 +1,25 @@
+# AI environment for generate_shape.py. Install PyTorch first with a CUDA 12.8+ build (RTX 50-series needs it):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# then: pip install -r model_scripts/requirements-gen.txt
+# then, from a clone of Hunyuan3D-2 under tools/: pip install -e tools/Hunyuan3D-2 --no-deps
+# (shape generation only; the texture components need compiled extensions and are not used)
+numpy
+trimesh
+numpy-stl
+pillow
+pyyaml
+einops
+omegaconf
+transformers==4.51.3
+diffusers==0.33.1
+accelerate
+safetensors
+huggingface_hub
+opencv-python
+rembg
+onnxruntime
+tqdm
+scipy
+networkx
+pymeshlab
+pygltflib

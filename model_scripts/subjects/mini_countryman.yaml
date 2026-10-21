@@ -1,0 +1,7 @@
+# Real-world size of the subject, in mm. Values are midpoints across trims
+# (length 4433-4447, height 1635-1661) from dealer-data listings, not an official MINI sheet.
+name: MINI Countryman (U25)
+length_mm: 4440
+width_mm: 1843
+height_mm: 1648
+wheelbase_mm: 2692   # reference only; judged by eye in the silhouette overlay
