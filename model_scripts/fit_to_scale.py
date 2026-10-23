@@ -10,6 +10,7 @@ Exit codes: 0 ok, 1 written but not print-ready, 2 dimensions out of tolerance, 
 """
 import argparse
 import sys
+import dataclasses
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -133,10 +134,18 @@ def main():
     p.add_argument("--length-mm", type=float)
     p.add_argument("--width-mm", type=float)
     p.add_argument("--height-mm", type=float)
+    p.add_argument("--max-stretch-pct", type=float,
+                   help="override the per-axis stretch cap for this run (default from config.yaml)")
+    p.add_argument("--force-fit", action="store_true",
+                   help="stretch width and height to the targets whatever it takes; distorts wheels and "
+                        "round parts, and is reported loudly")
     a = p.parse_args()
     try:
-        t = subject.targets(a.subject, denominator=a.scale,
+        t = subject.targets(a.subject, denominator=a.scale, max_axis_stretch_pct=a.max_stretch_pct,
                             length_mm=a.length_mm, width_mm=a.width_mm, height_mm=a.height_mm)
+        default_cap = t.max_axis_stretch_pct if a.max_stretch_pct is None else subject.targets(a.subject).max_axis_stretch_pct
+        if a.force_fit:
+            t = dataclasses.replace(t, max_axis_stretch_pct=float("inf"))
     except (ValueError, FileNotFoundError) as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 3
@@ -149,6 +158,11 @@ def main():
             print(f"NOTE: {dst} is from an earlier run and was NOT updated.", file=sys.stderr)
         return 3
     print_report(report, a.src, dst)
+    over = {n: k for n, k in report.stretch.items() if abs(k - 1) * 100 > default_cap}
+    if over and report.wrote:
+        print("WARNING: stretch beyond the configured cap (" + ", ".join(f"{n} {(k - 1) * 100:+.1f}%" for n, k in over.items())
+              + f" vs {default_cap:g}%). Wheels and other round parts are distorted by this amount; "
+              "check the model by eye before printing.")
     return report.exit_code
 
 
