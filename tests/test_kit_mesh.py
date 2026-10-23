@@ -74,3 +74,27 @@ def test_overlap_volume_is_zero_for_apart_solids_and_safe_when_nothing_overlaps(
     a, b = _box((10, 10, 10)), _box((10, 10, 10), center=(30, 0, 0))
     assert kit_mesh.overlap_volume(a, b) == 0.0
     assert kit_mesh.overlap_volume(a, _box((10, 10, 10), center=(5, 0, 0))) == pytest.approx(500)
+
+
+def test_a_flap_on_an_edge_that_simple_repairs_cannot_fix_is_cut_out_and_refilled():
+    s = trimesh.creation.icosphere(subdivisions=3, radius=10)
+    a, b = s.edges[0]
+    flap_tip = s.vertices[[a, b]].mean(axis=0) * 1.3
+    vertices = np.vstack([s.vertices, flap_tip])
+    faces = np.vstack([s.faces, [a, b, len(s.vertices)]])
+    flapped = trimesh.Trimesh(vertices, faces, process=False)          # three faces now share one edge
+    quick = flapped.copy()
+    trimesh.repair.fix_winding(quick)
+    trimesh.repair.fix_normals(quick)
+    trimesh.repair.fill_holes(quick)
+    assert not quick.is_volume                                         # the quick repairs are not enough
+    fixed = kit_mesh.make_solid(flapped, name="body")
+    assert fixed.is_volume
+    assert fixed.volume == pytest.approx(s.volume, rel=0.05)
+
+
+def test_scattered_triangles_that_cannot_make_a_solid_raise_naming_the_part():
+    rng = np.random.default_rng(1)
+    scraps = trimesh.Trimesh(vertices=rng.random((12, 3)) * 50, faces=[[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]], process=False)
+    with pytest.raises(ValueError, match="chassis"):
+        kit_mesh.make_solid(scraps, name="chassis")

@@ -117,7 +117,11 @@ def check_kit(parts, shell, subject_name, bed_mm=None, check_overlaps=True):
                 continue
             if np.any(ma.bounds[1] < mb.bounds[0]) or np.any(mb.bounds[1] < ma.bounds[0]):
                 continue
-            shared = kit_mesh.overlap_volume(ma, mb)
+            try:
+                shared = kit_mesh.overlap_volume(ma, mb)
+            except Exception as e:                      # keep the report the single failure channel
+                report.problems.append(f"{a} and {b}: could not measure the overlap ({e})")
+                continue
             if shared > OVERLAP_TOLERANCE:
                 report.overlaps[f"{a}/{b}"] = shared
                 report.problems.append(f"{a} and {b} overlap by {shared:.2f} mm^3")

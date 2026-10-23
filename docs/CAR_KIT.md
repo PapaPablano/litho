@@ -11,7 +11,7 @@ Run these in the AI environment (`tools/venv-gen`), because they need `trimesh`,
    `tools/venv-gen/Scripts/python model_scripts/make_kit.py models/raw/countryman.stl --subject mini_countryman --name countryman`
 3. Open the parts in `models/kit/countryman/` in your slicer.
 
-The command prints the assembled size against the real car and a list of problems. If any part overlaps another, a joint has no socket, a part is too big for the bed, or a size is more than 2% off, it exits with code 2 and writes nothing. Loading a dense body takes about a minute.
+The command prints the assembled size against the real car and a list of problems. If any part overlaps another, a joint has no socket, a part is too big for the bed, or a size is more than 2% off, it exits with code 2 and writes nothing. An earlier kit in the same folder is left as it was and the command says so, so do not print it for this body. A kit is replaced as a whole, never part by part. Loading a dense body takes about a minute.
 
 Useful options: `--scale 32` for another scale, `--wheel-style spoke5`, `--clearance 0.2`, `--bed-mm 220` for a smaller printer, and `--front -x` if the body's front is detected the wrong way round.
 

@@ -6,7 +6,7 @@ pytest.importorskip("manifold3d")
 
 import kit_mesh  # noqa: E402
 import make_kit  # noqa: E402
-from test_kit_body import _stand_in_body  # noqa: E402
+from kit_helpers import stand_in_body as _stand_in_body  # noqa: E402
 
 PART_FILES = {"body", "chassis", "interior", "wheel_front_left", "wheel_front_right", "wheel_rear_left", "wheel_rear_right"}
 
@@ -77,3 +77,56 @@ def test_running_without_the_ai_environment_explains_what_to_do(monkeypatch, tmp
     code = make_kit.main([str(tmp_path / "x.stl"), "--subject", "mini_countryman", "--name", "demo", "--out", str(tmp_path)])
     assert code == 1
     assert "AI environment" in capsys.readouterr().out
+
+
+def test_a_failed_check_leaves_the_earlier_kit_untouched_and_says_so(body_stl, tmp_path, capsys):
+    assert _run(body_stl, tmp_path) == 0
+    folder = tmp_path / "demo"
+    before = {p.name: p.stat().st_mtime_ns for p in folder.glob("*.stl")}
+    capsys.readouterr()
+    assert _run(body_stl, tmp_path, "--bed-mm", "50") == 2
+    assert {p.name: p.stat().st_mtime_ns for p in folder.glob("*.stl")} == before
+    assert "NOT updated" in capsys.readouterr().out
+
+
+def test_an_export_that_fails_part_way_leaves_the_earlier_kit_and_no_temp_folder(body_stl, tmp_path, monkeypatch, capsys):
+    assert _run(body_stl, tmp_path) == 0
+    folder = tmp_path / "demo"
+    before = {p.name: p.stat().st_mtime_ns for p in folder.glob("*.stl")}
+    real_export = trimesh.Trimesh.export
+    calls = {"n": 0}
+
+    def flaky(self, *a, **k):
+        calls["n"] += 1
+        if calls["n"] == 3:
+            raise OSError("disk full")
+        return real_export(self, *a, **k)
+
+    monkeypatch.setattr(trimesh.Trimesh, "export", flaky)
+    assert _run(body_stl, tmp_path) == 1
+    monkeypatch.undo()
+    assert "disk full" in capsys.readouterr().out
+    assert {p.name: p.stat().st_mtime_ns for p in folder.glob("*.stl")} == before
+    assert [p.name for p in tmp_path.iterdir()] == ["demo"]          # no leftover staging or backup folder
+
+
+def test_a_new_run_replaces_every_part_of_the_old_kit(body_stl, tmp_path):
+    assert _run(body_stl, tmp_path) == 0
+    (tmp_path / "demo" / "old_part.stl").write_bytes(b"stale")
+    assert _run(body_stl, tmp_path) == 0
+    assert {p.stem for p in (tmp_path / "demo").glob("*.stl")} == PART_FILES
+
+
+def test_an_unknown_print_orientation_is_refused_before_the_long_build(body_stl, tmp_path, monkeypatch, capsys):
+    bad = make_kit.subject.kit_config()
+    bad = type(bad)(bad.scale_denominator, bad.joint_clearance_mm, bad.bed_mm, {**bad.print_orientation, "body": "sideways"})
+    monkeypatch.setattr(make_kit.subject, "kit_config", lambda: bad)
+    monkeypatch.setattr(make_kit.kit_mesh, "load_solid", lambda *a, **k: pytest.fail("the body must not be loaded"))
+    assert _run(body_stl, tmp_path) == 1
+    assert "sideways" in capsys.readouterr().out
+
+
+def test_an_unexpected_failure_prints_a_message_not_a_traceback(body_stl, tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(make_kit.kit_check, "check_kit", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    assert _run(body_stl, tmp_path) == 1
+    assert "RuntimeError: boom" in capsys.readouterr().out

@@ -149,7 +149,7 @@ def conform_body(body, parts, subject_name, front=None):
     for j in (j for j in parts.joints if j.kind == "pin"):
         shell = kit_mesh.subtract(shell, kit_parts.joint_socket(j), name=j.name)
 
-    shell, dropped = _largest(shell)
+    shell, dropped = kit_mesh.largest_piece(shell, key=lambda p: p.volume)
     shell = kit_mesh.weld(shell)
     if not shell.is_volume:
         raise ValueError("body: the cut shell is not a closed solid")
@@ -161,11 +161,3 @@ def _wheel_places(parts):
     for j in (j for j in parts.joints if j.kind == "stub"):
         out[j.part] = (float(j.base[0]), 1 if j.base[1] > 0 else -1)
     return out
-
-
-def _largest(mesh):
-    pieces = mesh.split(only_watertight=False)
-    if len(pieces) <= 1:
-        return mesh, 0
-    keep = max(pieces, key=lambda p: p.volume)
-    return keep, len(pieces) - 1

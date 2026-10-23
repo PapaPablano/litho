@@ -69,10 +69,12 @@ def make_solid(mesh, name="mesh"):
     raise ValueError(f"{name}: could not be repaired into a closed solid; regenerate it or clean it in a mesh editor")
 
 
-def largest_piece(mesh):
-    """The connected piece with the most surface area."""
+def largest_piece(mesh, key=None):
+    """The biggest connected piece of `mesh` (by surface area unless `key` says otherwise), and how many others were dropped."""
     parts = mesh.split(only_watertight=False)
-    return max(parts, key=lambda p: p.area) if len(parts) > 1 else mesh
+    if len(parts) <= 1:
+        return mesh, 0
+    return max(parts, key=key or (lambda p: p.area)), len(parts) - 1
 
 
 def load_solid(path, name="body"):
@@ -81,7 +83,8 @@ def load_solid(path, name="body"):
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"{name}: no such file {path}")
-    return make_solid(largest_piece(trimesh.load(str(path), force="mesh")), name=name)
+    piece, _ = largest_piece(trimesh.load(str(path), force="mesh"))
+    return make_solid(piece, name=name)
 
 
 def thin(mesh, target_faces):

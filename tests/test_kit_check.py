@@ -8,7 +8,7 @@ pytest.importorskip("manifold3d")
 import kit_body  # noqa: E402
 import kit_check  # noqa: E402
 import kit_parts  # noqa: E402
-from test_kit_body import _stand_in_body  # noqa: E402
+from kit_helpers import stand_in_body as _stand_in_body  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -73,3 +73,35 @@ def test_a_missing_socket_is_reported(kit):
     solid_body = _stand_in_body()                      # no sockets cut in it
     report = kit_check.check_kit(parts, solid_body, "mini_countryman", check_overlaps=False)
     assert any("socket" in p for p in report.problems)
+
+
+def test_a_joint_with_less_than_the_minimum_gap_is_reported_as_too_tight(kit):
+    parts, shell = kit
+    tight = _copy(parts)
+    j = tight.joints[0]
+    tight.joints = [kit_parts.Joint(j.name, j.kind, j.part, j.base, j.axis, j.length, j.pin_radius + 0.14, j.clearance)] + list(parts.joints[1:])
+    report = kit_check.check_kit(tight, shell, "mini_countryman", check_overlaps=False)
+    assert any(j.name in p and "tighter" in p for p in report.problems)
+
+
+def test_an_assembled_size_more_than_two_percent_off_fails_and_names_the_dimension(kit):
+    parts, shell = kit
+    long_shell = shell.copy()
+    long_shell.apply_scale([1.05, 1.0, 1.0])
+    report = kit_check.check_kit(parts, long_shell, "mini_countryman", check_overlaps=False)
+    assert any(p.startswith("length:") for p in report.problems)
+    assert report.exit_code == 2
+
+
+def test_a_part_that_fails_the_strict_mesh_check_is_reported(kit, monkeypatch):
+    parts, shell = kit
+    monkeypatch.setattr(kit_check.check_mesh, "analyze", lambda path: {"open_edges": 2, "flipped_edges": 0})
+    report = kit_check.check_kit(parts, shell, "mini_countryman", check_overlaps=False)
+    assert any("fails the mesh check" in p for p in report.problems)
+
+
+def test_an_overlap_that_cannot_be_measured_is_reported_not_raised(kit, monkeypatch):
+    parts, shell = kit
+    monkeypatch.setattr(kit_check.kit_mesh, "overlap_volume", lambda a, b: (_ for _ in ()).throw(ValueError("not manifold")))
+    report = kit_check.check_kit(parts, shell, "mini_countryman")
+    assert any("could not measure the overlap" in p for p in report.problems)

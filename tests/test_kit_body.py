@@ -6,24 +6,10 @@ pytest.importorskip("pymeshlab")
 pytest.importorskip("manifold3d")
 
 import kit_body  # noqa: E402
+from kit_helpers import stand_in_body as _stand_in_body  # noqa: E402
 import kit_mesh  # noqa: E402
 import kit_parts  # noqa: E402
 import subject  # noqa: E402
-
-def _stand_in_body(width_factor=1.25, size=100.0):
-    """A boxy stand-in for a generated car (arbitrary units): a long lower box, a cabin, and two mirrors."""
-    length, width, height = size, size * 0.45 * width_factor, size * 0.36
-    lower = trimesh.creation.box(extents=[length, width, height * 0.5])
-    lower.apply_translation([0, 0, height * 0.25])
-    cabin = trimesh.creation.box(extents=[length * 0.55, width * 0.9, height * 0.5])
-    cabin.apply_translation([length * 0.05, 0, height * 0.75])
-    mirrors = []
-    for sign in (-1, 1):
-        m = trimesh.creation.box(extents=[length * 0.03, width * 0.14, height * 0.04])
-        m.apply_translation([-length * 0.15, sign * (width / 2 + width * 0.07), height * 0.58])
-        mirrors.append(m)
-    return kit_mesh.union(lower, cabin, *mirrors, name="stand-in")
-
 
 def _conform(body=None, subject_name="mini_countryman"):
     parts = kit_parts.build_parts(subject_name)
@@ -146,3 +132,22 @@ def test_an_unknown_front_value_is_refused():
     parts = kit_parts.build_parts("mini_countryman")
     with pytest.raises(ValueError, match="front"):
         kit_body.conform_body(_stand_in_body(), parts, "mini_countryman", front="left")
+
+
+def _side_wall_probe(lay, x_fraction, z):
+    """A point inside the stand-in cabin's side wall at `x_fraction` of the length from the front."""
+    x = -lay.length / 2 + x_fraction * lay.length
+    return [x, 0.9 * lay.width / 2 - 1.0, z]
+
+
+def test_the_glass_openings_are_open_and_the_pillars_between_them_are_solid():
+    parts, out = _conform()
+    lay = parts.layout
+    kit = subject.kit_spec("mini_countryman")
+    belt, roof = kit.beltline_height_fraction * lay.height, kit.roof_height_fraction * lay.height
+    mid = (belt + roof) / 2
+    name, start, end = kit.windows[0]
+    next_start = kit.windows[1][1]
+    assert not _has_material(out.shell, _side_wall_probe(lay, (start + end) / 2, mid))             # mid-window: open
+    assert _has_material(out.shell, _side_wall_probe(lay, (end + next_start) / 2, mid))            # pillar: solid
+    assert _has_material(out.shell, _side_wall_probe(lay, (start + end) / 2, belt - 0.8))          # below the sill line: solid
