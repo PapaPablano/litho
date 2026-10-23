@@ -13,10 +13,6 @@ PATCH_FRACTIONS = (0.003, 0.006, 0.012, 0.025)
 HOLE_FILL_EDGES = 2000
 
 
-def _is_solid(mesh):
-    return bool(mesh.is_volume)
-
-
 def _defect_faces(mesh):
     """Indices of faces on edges that run the same way twice, or that are not shared by two faces."""
     f = mesh.faces
@@ -51,11 +47,11 @@ def make_solid(mesh, name="mesh"):
     m = trimesh.Trimesh(mesh.vertices.copy(), mesh.faces.copy(), process=True)
     if len(m.faces) < 4:
         raise ValueError(f"{name}: too few triangles to be a solid")
-    if not _is_solid(m):
+    if not m.is_volume:
         trimesh.repair.fix_winding(m)
         trimesh.repair.fix_normals(m)
         trimesh.repair.fill_holes(m)
-    if _is_solid(m):
+    if m.is_volume:
         return m
     bad = _defect_faces(m)
     diagonal = float(np.linalg.norm(m.extents))
@@ -68,7 +64,7 @@ def make_solid(mesh, name="mesh"):
                 fixed = _meshlab_repair(m.vertices, m.faces[keep])
             except Exception:
                 continue
-            if len(fixed.faces) and _is_solid(fixed):
+            if len(fixed.faces) and fixed.is_volume:
                 return fixed
     raise ValueError(f"{name}: could not be repaired into a closed solid; regenerate it or clean it in a mesh editor")
 
@@ -103,7 +99,7 @@ def thin(mesh, target_faces):
 
 def _check(meshes, name):
     for m in meshes:
-        if not _is_solid(m):
+        if not m.is_volume:
             raise ValueError(f"{name}: a mesh is not a closed solid; run make_solid on it first")
 
 

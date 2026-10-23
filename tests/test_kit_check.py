@@ -19,7 +19,6 @@ def kit():
 
 
 def _copy(parts):
-    import copy
     return kit_parts.KitParts(
         chassis=parts.chassis.copy(), interior=parts.interior.copy(),
         wheels={n: w.copy() for n, w in parts.wheels.items()}, joints=parts.joints,

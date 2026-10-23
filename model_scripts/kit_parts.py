@@ -74,7 +74,7 @@ class KitParts:
     wheel_style: str
 
 
-def _cylinder(radius, length, start, axis, sections=32):
+def cylinder(radius, length, start, axis, sections=32):
     """A solid cylinder whose base centre is `start` and which runs `length` along `axis`."""
     import trimesh
     axis = np.asarray(axis, dtype=float)
@@ -85,7 +85,7 @@ def _cylinder(radius, length, start, axis, sections=32):
     return cyl
 
 
-def _box(extents, center):
+def box(extents, center):
     import trimesh
     b = trimesh.creation.box(extents=extents)
     b.apply_translation(center)
@@ -94,12 +94,12 @@ def _box(extents, center):
 
 def joint_pin(joint):
     """The solid pin of a joint."""
-    return _cylinder(joint.pin_radius, joint.length, joint.base, joint.axis)
+    return cylinder(joint.pin_radius, joint.length, joint.base, joint.axis)
 
 
 def joint_socket(joint):
     """The hole that receives a joint's pin, cut slightly deeper than the pin is long."""
-    return _cylinder(joint.socket_radius, joint.length + joint.clearance, joint.base, joint.axis)
+    return cylinder(joint.socket_radius, joint.length + joint.clearance, joint.base, joint.axis)
 
 
 def _layout(name, scale):
@@ -122,24 +122,24 @@ def _layout(name, scale):
     return Layout(
         scale=scale, length=length, width=width, height=height, axle_x=(front_x, rear_x), wheel_radius=radius,
         tyre_width=tyre_w, track=track, pan_half_width=pan_hw, pan_x=(front_x - 6.0, rear_x + 6.0),
-        pan_bottom=pan_bottom, pan_top=pan_top, floor_bottom=pan_top + POST_SHOULDER_HEIGHT - 0.0,
+        pan_bottom=pan_bottom, pan_top=pan_top, floor_bottom=pan_top + POST_SHOULDER_HEIGHT,
     )
 
 
 def _wheel(style, radius, width, socket_radius, socket_depth):
     """A wheel centred on the origin, axle along +Y, with its hub socket opening on the -Y (inner) face."""
-    wheel = _cylinder(radius, width, [0, -width / 2, 0], [0, 1, 0], sections=64)
+    wheel = cylinder(radius, width, [0, -width / 2, 0], [0, 1, 0], sections=64)
     rim_radius, rim_depth = radius * 0.62, 0.8
     outer_face = width / 2
-    wheel = kit_mesh.subtract(wheel, _cylinder(rim_radius, rim_depth + EPS, [0, outer_face - rim_depth, 0], [0, 1, 0], 64), "wheel")
+    wheel = kit_mesh.subtract(wheel, cylinder(rim_radius, rim_depth + EPS, [0, outer_face - rim_depth, 0], [0, 1, 0], 64), "wheel")
     if style == "spoke5":
         for i in range(5):
             a = 2 * np.pi * i / 5
             c = [0.40 * radius * np.cos(a), outer_face - rim_depth - 1.0, 0.40 * radius * np.sin(a)]
-            wheel = kit_mesh.subtract(wheel, _cylinder(0.17 * radius, 1.0 + EPS, c, [0, 1, 0], 24), "wheel")
+            wheel = kit_mesh.subtract(wheel, cylinder(0.17 * radius, 1.0 + EPS, c, [0, 1, 0], 24), "wheel")
     elif style != "disc":
         raise ValueError(f"unknown wheel style '{style}'; choose from {', '.join(WHEEL_STYLES)}")
-    return kit_mesh.subtract(wheel, _cylinder(socket_radius, socket_depth + EPS, [0, -width / 2 - EPS, 0], [0, 1, 0], 32), "wheel")
+    return kit_mesh.subtract(wheel, cylinder(socket_radius, socket_depth + EPS, [0, -width / 2 - EPS, 0], [0, 1, 0], 32), "wheel")
 
 
 def build_parts(subject_name, scale=None, wheel_style="disc", clearance_mm=None, overrides=None):
@@ -156,7 +156,7 @@ def build_parts(subject_name, scale=None, wheel_style="disc", clearance_mm=None,
     joints, pieces = [], []
     hw, zb, zt = lay.pan_half_width, lay.pan_bottom, lay.pan_top
     x0, x1 = lay.pan_x
-    pieces.append(_box([x1 - x0, 2 * hw, PAN_THICKNESS], [(x0 + x1) / 2, 0, (zb + zt) / 2]))
+    pieces.append(box([x1 - x0, 2 * hw, PAN_THICKNESS], [(x0 + x1) / 2, 0, (zb + zt) / 2]))
 
     wheel_pos = {}
     for axle, x in zip(("front", "rear"), lay.axle_x):
@@ -166,9 +166,9 @@ def build_parts(subject_name, scale=None, wheel_style="disc", clearance_mm=None,
             inner = track / 2 - lay.tyre_width / 2
             stub_len = inner - hw
             top = lay.wheel_radius + STUB_RADIUS + 1.0
-            pieces.append(_box([2 * (STUB_RADIUS + 1.5), BLOCK_DEPTH, top - zb],
+            pieces.append(box([2 * (STUB_RADIUS + 1.5), BLOCK_DEPTH, top - zb],
                                [x, sign * (hw - BLOCK_DEPTH / 2 + EPS), (zb + top) / 2]))
-            pieces.append(_cylinder(STUB_RADIUS, stub_len + EPS, [x, sign * (hw - EPS), lay.wheel_radius], [0, sign, 0]))
+            pieces.append(cylinder(STUB_RADIUS, stub_len + EPS, [x, sign * (hw - EPS), lay.wheel_radius], [0, sign, 0]))
             joints.append(Joint(f"stub_{name}", "stub", name, np.array([x, sign * hw, lay.wheel_radius]),
                                 np.array([0.0, sign, 0.0]), stub_len, STUB_RADIUS, gap(f"stub_{name}")))
             wheel_pos[name] = (x, sign * track / 2, sign)
@@ -178,7 +178,7 @@ def build_parts(subject_name, scale=None, wheel_style="disc", clearance_mm=None,
     for i, x in enumerate(pin_x):
         for j, sign in enumerate((-1, 1)):
             base = np.array([x, sign * (hw - 1.5), zt])
-            pieces.append(_cylinder(BODY_PIN_RADIUS, BODY_PIN_HEIGHT + EPS, base - [0, 0, EPS], [0, 0, 1]))
+            pieces.append(cylinder(BODY_PIN_RADIUS, BODY_PIN_HEIGHT + EPS, base - [0, 0, EPS], [0, 0, 1]))
             joints.append(Joint(f"pin_{i}_{j}", "pin", "body", base, np.array([0.0, 0.0, 1.0]),
                                 BODY_PIN_HEIGHT, BODY_PIN_RADIUS, gap(f"pin_{i}_{j}")))
 
@@ -187,19 +187,19 @@ def build_parts(subject_name, scale=None, wheel_style="disc", clearance_mm=None,
     for i, x in enumerate(post_x):
         for j, sign in enumerate((-1, 1)):
             base = np.array([x, sign * post_y, zt + POST_SHOULDER_HEIGHT])
-            pieces.append(_cylinder(POST_SHOULDER_RADIUS, POST_SHOULDER_HEIGHT + EPS, [x, sign * post_y, zt - EPS], [0, 0, 1]))
-            pieces.append(_cylinder(POST_PIN_RADIUS, POST_PIN_HEIGHT + EPS, base - [0, 0, EPS], [0, 0, 1]))
+            pieces.append(cylinder(POST_SHOULDER_RADIUS, POST_SHOULDER_HEIGHT + EPS, [x, sign * post_y, zt - EPS], [0, 0, 1]))
+            pieces.append(cylinder(POST_PIN_RADIUS, POST_PIN_HEIGHT + EPS, base - [0, 0, EPS], [0, 0, 1]))
             joints.append(Joint(f"post_{i}_{j}", "post", "interior", base, np.array([0.0, 0.0, 1.0]),
                                 POST_PIN_HEIGHT, POST_PIN_RADIUS, gap(f"post_{i}_{j}")))
 
     chassis = kit_mesh.union(*pieces, name="chassis")
 
+    import trimesh
     wheels = {}
     for name, (x, y, sign) in wheel_pos.items():
         joint = next(j for j in joints if j.name == f"stub_{name}")
         w = _wheel(wheel_style, lay.wheel_radius, lay.tyre_width, joint.socket_radius, joint.length + joint.clearance)
         if sign < 0:
-            import trimesh
             w.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [0, 0, 1]))
         w.apply_translation([x, y, lay.wheel_radius])
         wheels[name] = w
@@ -215,23 +215,20 @@ def _interior(lay, posts):
     half = lay.pan_half_width * 0.8
     z0 = lay.floor_bottom
     z1 = z0 + FLOOR_THICKNESS
-    parts = [_box([fx1 - fx0, 2 * half, FLOOR_THICKNESS], [(fx0 + fx1) / 2, 0, (z0 + z1) / 2])]
+    parts = [box([fx1 - fx0, 2 * half, FLOOR_THICKNESS], [(fx0 + fx1) / 2, 0, (z0 + z1) / 2])]
     seat_w, seat_d, seat_h, back_h = 380 / s, 420 / s, 120 / s, 480 / s
     seat_x = fx0 + 0.34 * (fx1 - fx0)
     for sign in (-1, 1):
-        parts.append(_box([seat_d, seat_w, seat_h], [seat_x, sign * 0.115 * lay.width, z1 + seat_h / 2 - EPS]))
-        parts.append(_box([100 / s, seat_w, back_h], [seat_x + seat_d / 2 + 50 / s - EPS, sign * 0.115 * lay.width, z1 + back_h / 2 - EPS]))
+        parts.append(box([seat_d, seat_w, seat_h], [seat_x, sign * 0.115 * lay.width, z1 + seat_h / 2 - EPS]))
+        parts.append(box([100 / s, seat_w, back_h], [seat_x + seat_d / 2 + 50 / s - EPS, sign * 0.115 * lay.width, z1 + back_h / 2 - EPS]))
     bench_w = min(2 * half - 2.0, 1000 / s)
     bench_x = fx0 + 0.74 * (fx1 - fx0)
-    parts.append(_box([450 / s, bench_w, seat_h], [bench_x, 0, z1 + seat_h / 2 - EPS]))
-    parts.append(_box([100 / s, bench_w, back_h], [bench_x + 225 / s + 50 / s - EPS, 0, z1 + back_h / 2 - EPS]))
-    parts.append(_box([300 / s, 2 * half - 2.0, 250 / s], [fx0 + 150 / s, 0, z1 + 125 / s - EPS]))
+    parts.append(box([450 / s, bench_w, seat_h], [bench_x, 0, z1 + seat_h / 2 - EPS]))
+    parts.append(box([100 / s, bench_w, back_h], [bench_x + 225 / s + 50 / s - EPS, 0, z1 + back_h / 2 - EPS]))
+    parts.append(box([300 / s, 2 * half - 2.0, 250 / s], [fx0 + 150 / s, 0, z1 + 125 / s - EPS]))
     interior = kit_mesh.union(*parts, name="interior")
     for joint in posts:
-        bore = _cylinder(joint.socket_radius, joint.length + joint.clearance + EPS, joint.base - [0, 0, EPS], [0, 0, 1])
+        bore = cylinder(joint.socket_radius, joint.length + joint.clearance + EPS, joint.base - [0, 0, EPS], [0, 0, 1])
         interior = kit_mesh.subtract(interior, bore, "interior")
     return interior
 
-
-# shared with kit_body, which cuts the body around these parts
-cylinder, box = _cylinder, _box

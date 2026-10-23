@@ -10,9 +10,6 @@ import kit_mesh  # noqa: E402
 import kit_parts  # noqa: E402
 import subject  # noqa: E402
 
-PINS = None
-
-
 def _stand_in_body(width_factor=1.25, size=100.0):
     """A boxy stand-in for a generated car (arbitrary units): a long lower box, a cabin, and two mirrors."""
     length, width, height = size, size * 0.45 * width_factor, size * 0.36
@@ -38,14 +35,6 @@ def _has_material(mesh, point, half=0.05):
     probe = trimesh.creation.box(extents=[2 * half] * 3)
     probe.apply_translation(point)
     return kit_mesh.intersect(mesh, probe, name="probe").volume > 0.5 * probe.volume
-
-
-def _band_width(mesh, lo, hi):
-    v = mesh.vertices
-    z0 = v[:, 2].min()
-    h = v[:, 2].max() - z0
-    sel = (v[:, 2] >= z0 + lo * h) & (v[:, 2] <= z0 + hi * h)
-    return np.ptp(v[sel, 1])
 
 
 def test_a_body_25_percent_too_wide_is_conformed_to_the_target_width_below_the_mirror():

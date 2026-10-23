@@ -64,7 +64,7 @@ def _faces_plus_x(v):
 def _scale_to_real(body, lay, front=None):
     import trimesh
     v = body.vertices.copy()
-    turned = _faces_plus_x(v) if front is None else (front == "+x")
+    turned = bool(_faces_plus_x(v)) if front is None else (front == "+x")
     if turned:                                     # half a turn about Z keeps the winding intact
         v[:, 0], v[:, 1] = -v[:, 0], -v[:, 1]
     z0, z1 = v[:, 2].min(), v[:, 2].max()
