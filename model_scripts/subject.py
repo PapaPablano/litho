@@ -89,6 +89,7 @@ class KitConfig:
     scale_denominator: float
     joint_clearance_mm: float
     bed_mm: float
+    print_orientation: dict
 
 
 def kit_spec(name):
@@ -118,4 +119,6 @@ def kit_config():
         scale_denominator=float(cfg.get("scale_denominator", 24)),
         joint_clearance_mm=float(cfg.get("joint_clearance_mm", 0.15)),
         bed_mm=float(cfg.get("bed_mm", 256)),
+        print_orientation={"body": "roof_down", "chassis": "flat", "interior": "flat", "wheel": "axle_up",
+                           **cfg.get("print_orientation", {})},
     )

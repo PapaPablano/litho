@@ -16,7 +16,7 @@ WIDTH_BAND = (0.20, 0.42)    # share of body height where the width is measured,
 ARCH_GAP = 1.0               # clearance between a tyre and its wheel arch, in print mm
 WALL = 2.0                   # side wall thickness around the cabin cavity
 ROOF_THICKNESS = 2.0
-LIP_HEIGHT = 4.0             # material kept above the chassis edge so each body pin has something to seat in
+LIP_HEIGHT = 10.0            # block added above each chassis pin so it has material to seat in, reaching up into the body wall
 LIP_HALF_LENGTH = 3.5
 FIT_GAP = 0.3                # clearance between the body and the chassis pan or the interior
 BIG = 1000.0                 # a cutter dimension large enough to pass through the whole body
@@ -119,17 +119,16 @@ def conform_body(body, parts, subject_name, front=None):
     gx0, gx1 = -lay.length / 2 + win_lo * lay.length - 1.5, -lay.length / 2 + win_hi * lay.length + 1.5
     cav.append(_greenhouse_cavity(scaled, lay, gx0, gx1))
     cavity = kit_mesh.union(*cav, name="cavity")
+    shell = kit_mesh.subtract(scaled, cavity, name="body")
 
-    # keep a lip of body above each chassis pin
+    # a lip above each chassis pin: the generated body's underside can sit well above the chassis edge
     lips = []
     for j in (j for j in parts.joints if j.kind == "pin"):
         sign = 1 if j.base[1] > 0 else -1
         y_in, y_out = hw - 3.5, half_w - WALL + 1.0
         lips.append(kit_parts.box([2 * LIP_HALF_LENGTH, y_out - y_in, LIP_HEIGHT],
                                   [j.base[0], sign * (y_in + y_out) / 2, zt + LIP_HEIGHT / 2]))
-    cavity = kit_mesh.subtract(cavity, kit_mesh.union(*lips, name="lips"), name="cavity")
-
-    shell = kit_mesh.subtract(scaled, cavity, name="body")
+    shell = kit_mesh.union(shell, *lips, name="body")
 
     # open glass, straight through the body
     belt, roof = kit.beltline_height_fraction * lay.height, kit.roof_height_fraction * lay.height
@@ -147,6 +146,7 @@ def conform_body(body, parts, subject_name, front=None):
         shell = kit_mesh.subtract(shell, kit_parts.joint_socket(j), name=j.name)
 
     shell, dropped = _largest(shell)
+    shell = kit_mesh.weld(shell)
     if not shell.is_volume:
         raise ValueError("body: the cut shell is not a closed solid")
     return Conformed(shell=shell, scale=scale, measured_width=measured, dropped_pieces=dropped, turned=turned)

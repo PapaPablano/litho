@@ -131,3 +131,16 @@ def overlap_volume(a, b):
     import trimesh
     out = trimesh.boolean.intersection([a, b], engine="manifold")
     return float(out.volume) if len(out.faces) else 0.0
+
+
+def weld(mesh, tolerance=0.002):
+    """Merge vertices closer than `tolerance` and drop the sliver faces that leaves, so a strict STL check passes."""
+    import pymeshlab
+    import trimesh
+    ms = pymeshlab.MeshSet()
+    ms.add_mesh(pymeshlab.Mesh(vertex_matrix=mesh.vertices, face_matrix=mesh.faces))
+    ms.meshing_merge_close_vertices(threshold=pymeshlab.PureValue(tolerance))
+    ms.meshing_remove_duplicate_faces()
+    ms.meshing_remove_null_faces()
+    out = ms.current_mesh()
+    return trimesh.Trimesh(out.vertex_matrix(), out.face_matrix(), process=True)

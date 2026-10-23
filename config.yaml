@@ -20,3 +20,8 @@ kit:
   scale_denominator: 24    # print scale 1:N for the car kit; the model: section above stays at 1:32
   joint_clearance_mm: 0.15 # gap between a pin and its socket; prove it with the joint test print
   bed_mm: 256              # printer bed edge, in mm (Elegoo Centauri Carbon 2)
+  print_orientation:       # how each part lies on the bed: flat, roof_down, or axle_up (wheels, hub socket down)
+    body: roof_down
+    chassis: flat
+    interior: flat
+    wheel: axle_up
