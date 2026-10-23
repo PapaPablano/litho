@@ -42,3 +42,39 @@ def test_defaults_come_from_config():
     t = subject.targets("mini_countryman")
     assert t.tolerance_pct == 2.0
     assert t.max_axis_stretch_pct == 5.0
+
+
+def test_countryman_kit_block_has_a_source_note_for_every_value():
+    k = subject.kit_spec("mini_countryman")
+    for field in subject.KIT_FIELDS:
+        assert getattr(k, field) > 0
+        assert k.sources.get(field), f"no source note for {field}"
+    assert k.wheel_diameter_mm == pytest.approx(705, abs=1)
+
+
+def test_unverified_kit_values_are_reported():
+    k = subject.kit_spec("mini_countryman")
+    assert "ground_clearance_mm" in k.unverified
+
+
+def test_a_subject_without_a_kit_block_still_gives_targets_and_names_the_gap(tmp_path):
+    f = tmp_path / "plain.yaml"
+    f.write_text("length_mm: 4000\nwidth_mm: 1800\nheight_mm: 1500\n", encoding="utf-8")
+    assert subject.targets(str(f)).real_mm == (4000.0, 1800.0, 1500.0)
+    with pytest.raises(ValueError, match="no kit block"):
+        subject.kit_spec(str(f))
+
+
+def test_kit_block_missing_track_width_names_the_field(tmp_path):
+    f = tmp_path / "broken.yaml"
+    f.write_text("length_mm: 4000\nwidth_mm: 1800\nheight_mm: 1500\nkit:\n  wheel_diameter_mm: 700\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="track_front_mm"):
+        subject.kit_spec(str(f))
+
+
+def test_kit_config_is_1_to_24_while_the_model_section_stays_1_to_32():
+    cfg = subject.kit_config()
+    assert cfg.scale_denominator == 24
+    assert cfg.joint_clearance_mm == pytest.approx(0.15)
+    assert cfg.bed_mm == 256
+    assert subject.targets("mini_countryman").denominator == 32

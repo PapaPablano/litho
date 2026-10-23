@@ -5,3 +5,32 @@ length_mm: 4440
 width_mm: 1843
 height_mm: 1648
 wheelbase_mm: 2692   # reference only; judged by eye in the silhouette overlay
+
+# Extra numbers the car kit needs (mm unless noted). Every value has a source note; values listed under
+# `unverified` are estimates to confirm or tune by eye.
+kit:
+  track_front_mm: 1674
+  track_rear_mm: 1675
+  wheel_diameter_mm: 705        # 225/55 R18: 18 in rim plus two 55% sidewalls
+  tyre_width_mm: 225
+  ground_clearance_mm: 165
+  front_overhang_mm: 868
+  rear_overhang_mm: 884
+  beltline_height_fraction: 0.58   # window sills, as a share of overall height
+  roof_height_fraction: 0.94       # top of the glass openings, as a share of overall height
+  windows:                         # glass openings along the length, as fractions of overall length from the front
+    - {name: windscreen_side, from: 0.33, to: 0.47}
+    - {name: front_door, from: 0.48, to: 0.62}
+    - {name: rear_door, from: 0.64, to: 0.84}
+  sources:
+    track_front_mm: MINI UK technical data (1674); a US data sheet lists about 1575 and was not used
+    track_rear_mm: MINI UK technical data (1675)
+    wheel_diameter_mm: computed from the 225/55 R18 tyre on the US data sheet
+    tyre_width_mm: US data sheet, 225/55 R18
+    ground_clearance_mm: Australian listing (165 unladen); a US sheet gives 203 for the S ALL4
+    front_overhang_mm: MINI UK and US data sheets (868); 868 + 2692 + 884 gives the 4444 length
+    rear_overhang_mm: MINI UK and US data sheets (884)
+    beltline_height_fraction: estimated from the side photo; tune against the silhouette overlay
+    roof_height_fraction: estimated from the side photo; tune against the silhouette overlay
+    windows: estimated from the side photo; tune against the silhouette overlay
+  unverified: [ground_clearance_mm, beltline_height_fraction, roof_height_fraction, windows]

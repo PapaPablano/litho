@@ -58,3 +58,64 @@ def targets(name, denominator=None, tolerance_pct=None, max_axis_stretch_pct=Non
             max_axis_stretch_pct if max_axis_stretch_pct is not None else cfg.get("max_axis_stretch_pct", 5.0)
         ),
     )
+
+
+KIT_FIELDS = (
+    "track_front_mm", "track_rear_mm", "wheel_diameter_mm", "tyre_width_mm",
+    "ground_clearance_mm", "front_overhang_mm", "rear_overhang_mm",
+    "beltline_height_fraction", "roof_height_fraction",
+)
+
+
+@dataclass(frozen=True)
+class KitSpec:
+    """Extra real-world numbers the car kit needs, each with a source note."""
+    track_front_mm: float
+    track_rear_mm: float
+    wheel_diameter_mm: float
+    tyre_width_mm: float
+    ground_clearance_mm: float
+    front_overhang_mm: float
+    rear_overhang_mm: float
+    beltline_height_fraction: float
+    roof_height_fraction: float
+    windows: tuple           # of (name, from_fraction, to_fraction) along the length
+    sources: dict
+    unverified: tuple        # names of values to confirm or tune by eye
+
+
+@dataclass(frozen=True)
+class KitConfig:
+    scale_denominator: float
+    joint_clearance_mm: float
+    bed_mm: float
+
+
+def kit_spec(name):
+    """The kit block of a subject, or ValueError naming what is missing."""
+    path = _subject_path(name)
+    if not path.exists():
+        raise FileNotFoundError(f"subject '{name}' not found (looked for {path})")
+    kit = _read_yaml(path).get("kit")
+    if not kit:
+        raise ValueError(f"{path.name}: no kit block")
+    for field in KIT_FIELDS:
+        if kit.get(field) is None:
+            raise ValueError(f"{path.name}: kit block is missing {field}")
+    windows = tuple((w["name"], float(w["from"]), float(w["to"])) for w in kit.get("windows", []))
+    return KitSpec(
+        **{field: float(kit[field]) for field in KIT_FIELDS},
+        windows=windows,
+        sources=dict(kit.get("sources", {})),
+        unverified=tuple(kit.get("unverified", [])),
+    )
+
+
+def kit_config():
+    """Kit scale, joint clearance and bed size from the `kit:` section of config.yaml."""
+    cfg = _read_yaml(ROOT / "config.yaml").get("kit", {})
+    return KitConfig(
+        scale_denominator=float(cfg.get("scale_denominator", 24)),
+        joint_clearance_mm=float(cfg.get("joint_clearance_mm", 0.15)),
+        bed_mm=float(cfg.get("bed_mm", 256)),
+    )
