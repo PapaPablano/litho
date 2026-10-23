@@ -22,4 +22,5 @@ tqdm
 scipy
 networkx
 pymeshlab
+manifold3d
 pygltflib
