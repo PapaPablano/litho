@@ -120,3 +120,19 @@ def test_one_reversed_triangle_is_written_but_not_print_ready(box_stl, tmp_path)
     r, out = _fit(box_stl, tmp_path, (125, 50, 37.5), flip_one=True)
     assert out.exists() and r.dimensions_ok
     assert not r.print_ready and r.exit_code == 1
+
+
+def test_cli_force_fit_stretches_past_the_cap_and_warns(box_stl, tmp_path):
+    raw = box_stl("raw.stl", 125, 70, 37.5)             # width about 25% too wide after scaling
+    plain = _cli(raw, "--subject", "mini_countryman", "--out", tmp_path / "a.stl")
+    assert plain.returncode == 2
+    forced = _cli(raw, "--subject", "mini_countryman", "--force-fit", "--out", tmp_path / "b.stl")
+    assert forced.returncode in (0, 1)
+    assert (tmp_path / "b.stl").exists()
+    assert "WARNING: stretch beyond the configured cap" in forced.stdout
+
+
+def test_cli_max_stretch_pct_overrides_the_cap(box_stl, tmp_path):
+    raw = box_stl("raw.stl", 125, 70, 37.5)
+    r = _cli(raw, "--subject", "mini_countryman", "--max-stretch-pct", 30, "--out", tmp_path / "c.stl")
+    assert r.returncode in (0, 1) and "WARNING" in r.stdout

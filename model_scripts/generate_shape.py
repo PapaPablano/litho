@@ -21,12 +21,18 @@ def default_out(name):
     return ROOT / "models" / "raw" / f"{name}.stl"
 
 
+MIN_PART_FRACTION = 0.03   # a piece smaller than this share of the biggest piece's area is debris
+
+
 def keep_largest(mesh):
-    """Drop floating fragments: keep the connected piece with the most surface area."""
+    """Drop floating debris but keep real parts: the generator emits wheels as separate pieces."""
+    import trimesh
     parts = mesh.split(only_watertight=False)
     if len(parts) <= 1:
         return mesh
-    return max(parts, key=lambda p: p.area)
+    biggest = max(p.area for p in parts)
+    kept = [p for p in parts if p.area >= MIN_PART_FRACTION * biggest]
+    return kept[0] if len(kept) == 1 else trimesh.util.concatenate(kept)
 
 
 def fill_holes(mesh):
@@ -152,10 +158,13 @@ def run_hunyuan_mv(views, steps=30, octree=256, seed=12345, low_vram=False):
 
     pipe = Hunyuan3DDiTFlowMatchingPipeline.from_pretrained(
         "tencent/Hunyuan3D-2mv", subfolder="hunyuan3d-dit-v2-mv", variant="fp16",
-        **({} if low_vram else {"device": "cuda"}),
+        device="cpu" if low_vram else "cuda",     # offload hooks bring each part to the GPU on demand
     )
     if low_vram:
+        # the vendored pipeline reads self.components in enable_model_cpu_offload but never sets it
+        pipe.components = {"conditioner": pipe.conditioner, "model": pipe.model, "vae": pipe.vae}
         pipe.enable_model_cpu_offload()
+        pipe.device = torch.device("cuda")      # latents are built on pipe.device; the hooks only move the models
     return pipe(
         image=views, num_inference_steps=steps, octree_resolution=octree, num_chunks=8000,
         generator=torch.manual_seed(seed), output_type="trimesh",
@@ -199,6 +208,10 @@ def main(argv=None):
     p.add_argument("--octree", type=int, default=256, help="mesh resolution; lower uses less VRAM")
     p.add_argument("--seed", type=int, default=12345)
     p.add_argument("--low-vram", action="store_true", help="offload model parts to CPU between stages")
+    p.add_argument("--no-prepare", action="store_true",
+                   help="skip the view preparation step (cut-out, equal height, common canvas)")
+    p.add_argument("--subject", help="subject name (e.g. mini_countryman): balance each view to its real proportions "
+                                     "while preparing")
     p.add_argument("--up", default=HUNYUAN_UP, choices=sorted(_UP_TO_Z), help="up axis of the generator output")
     a = p.parse_args(argv)
 
@@ -211,12 +224,26 @@ def main(argv=None):
         mesh = run_hunyuan_single(image, a.steps, a.octree, a.seed)
     else:
         import check_views
-        check = check_views.check(a.views)
+        views_dir = a.views
+        if not a.no_prepare:
+            import prepare_views
+            try:
+                real_mm = None
+                if a.subject:
+                    import subject
+                    real_mm = subject.targets(a.subject).real_mm
+                views_dir = prepare_views.prepare_folder(
+                    a.views, ROOT / "photos" / "output" / f"{a.name}_views_prepared", real_mm=real_mm)
+            except (OSError, ValueError, ImportError) as e:
+                print(e)
+                return 1
+            print(f"Prepared views (cut out, same height, one canvas size): {views_dir}")
+        check = check_views.check(views_dir)
         if not check.ok:
             for line in check.problems:
                 print(line)
             return 1
-        mesh = run_hunyuan_mv(load_views(a.views), a.steps, a.octree, a.seed, a.low_vram)
+        mesh = run_hunyuan_mv(load_views(views_dir), a.steps, a.octree, a.seed, a.low_vram)
     mesh = postprocess(mesh, up=a.up)
     out = Path(a.out) if a.out else default_out(a.name)
     out.parent.mkdir(parents=True, exist_ok=True)

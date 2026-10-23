@@ -21,6 +21,14 @@ def test_keeps_only_the_larger_of_two_disconnected_boxes():
     assert out.extents == pytest.approx([10, 10, 10])
 
 
+def test_keeps_wheel_sized_pieces_but_drops_debris():
+    body = _box((100, 40, 30))
+    wheel = _box((20, 8, 20), center=(30, 20, -15))
+    speck = _box((1, 1, 1), center=(200, 0, 0))
+    out = gs.keep_largest(trimesh.util.concatenate([body, wheel, speck]))
+    assert len(out.vertices) == 16          # body + wheel, no speck
+
+
 def test_y_longest_mesh_is_rotated_so_x_is_longest_with_z_up():
     out = gs.orient(_box((30, 125, 20)), up="z")
     assert out.extents == pytest.approx([125, 30, 20])

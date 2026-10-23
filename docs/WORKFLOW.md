@@ -18,3 +18,6 @@ Change one thing at a time (contrast, gamma, thickness range) and keep notes nex
 
 ## Freestanding models from pictures
 For a 3D model rather than a lithophane, follow `docs/IMAGE_TO_3D.md`: capture straight-on views, generate a shape locally, fit it to the object's real dimensions at a print scale, and check it with `print_prep/check_mesh.py` before slicing.
+
+## Printing a car as separate parts
+To turn a generated body into a kit of printable parts (body shell, chassis, wheels, interior) that fit together at 1:24, follow `docs/CAR_KIT.md`.
