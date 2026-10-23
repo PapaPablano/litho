@@ -9,8 +9,8 @@ wheelbase_mm: 2692   # reference only; judged by eye in the silhouette overlay
 # Extra numbers the car kit needs (mm unless noted). Every value has a source note; values listed under
 # `unverified` are estimates to confirm or tune by eye.
 kit:
-  track_front_mm: 1674
-  track_rear_mm: 1675
+  track_front_mm: 1575
+  track_rear_mm: 1575
   wheel_diameter_mm: 705        # 225/55 R18: 18 in rim plus two 55% sidewalls
   tyre_width_mm: 225
   ground_clearance_mm: 165
@@ -23,8 +23,8 @@ kit:
     - {name: front_door, from: 0.48, to: 0.62}
     - {name: rear_door, from: 0.64, to: 0.84}
   sources:
-    track_front_mm: MINI UK technical data (1674); a US data sheet lists about 1575 and was not used
-    track_rear_mm: MINI UK technical data (1675)
+    track_front_mm: US data sheet (about 62 in); MINI UK lists 1674, but that puts the tyre faces at 1899 mm, wider than the 1843 mm body
+    track_rear_mm: US data sheet (about 62 in), same reasoning as the front
     wheel_diameter_mm: computed from the 225/55 R18 tyre on the US data sheet
     tyre_width_mm: US data sheet, 225/55 R18
     ground_clearance_mm: Australian listing (165 unladen); a US sheet gives 203 for the S ALL4
