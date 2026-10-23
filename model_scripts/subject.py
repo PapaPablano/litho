@@ -103,7 +103,10 @@ def kit_spec(name):
     for field in KIT_FIELDS:
         if kit.get(field) is None:
             raise ValueError(f"{path.name}: kit block is missing {field}")
-    windows = tuple((w["name"], float(w["from"]), float(w["to"])) for w in kit.get("windows", []))
+    try:
+        windows = tuple((w["name"], float(w["from"]), float(w["to"])) for w in kit.get("windows", []))
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"{path.name}: each window needs a name, from and to ({e})") from e
     return KitSpec(
         **{field: float(kit[field]) for field in KIT_FIELDS},
         windows=windows,

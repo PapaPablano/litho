@@ -78,3 +78,11 @@ def test_kit_config_is_1_to_24_while_the_model_section_stays_1_to_32():
     assert cfg.joint_clearance_mm == pytest.approx(0.15)
     assert cfg.bed_mm == 256
     assert subject.targets("mini_countryman").denominator == 32
+
+
+def test_a_malformed_window_entry_names_the_problem(tmp_path):
+    f = tmp_path / "badwin.yaml"
+    base = open(subject.SUBJECTS / "mini_countryman.yaml", encoding="utf-8").read()
+    f.write_text(base.replace("{name: front_door, from: 0.34, to: 0.52}", "{name: front_door, from: 0.34}"), encoding="utf-8")
+    with pytest.raises(ValueError, match="window"):
+        subject.kit_spec(str(f))

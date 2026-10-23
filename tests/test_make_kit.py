@@ -68,3 +68,12 @@ def test_every_wheel_prints_with_its_hub_socket_on_the_bed_side(body_stl, tmp_pa
 
     near_bed, inside = slab(0.2), slab(4.0)
     assert near_bed < inside                              # the socket hole is visible just above the bed
+
+
+def test_running_without_the_ai_environment_explains_what_to_do(monkeypatch, tmp_path, capsys):
+    def boom(*a, **k):
+        raise ImportError("No module named 'trimesh'")
+    monkeypatch.setattr(make_kit.kit_mesh, "load_solid", boom)
+    code = make_kit.main([str(tmp_path / "x.stl"), "--subject", "mini_countryman", "--name", "demo", "--out", str(tmp_path)])
+    assert code == 1
+    assert "AI environment" in capsys.readouterr().out

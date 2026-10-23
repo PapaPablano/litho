@@ -98,6 +98,10 @@ def conform_body(body, parts, subject_name, front=None):
     """
     lay = parts.layout
     kit = subject.kit_spec(subject_name)
+    if front not in (None, "+x", "-x"):
+        raise ValueError(f"front must be '+x' or '-x', not {front!r}")
+    if not kit.windows:
+        raise ValueError("the subject's kit block lists no windows; add at least one to cut the glass openings")
     _check_windows(kit.windows)
     scaled, scale, measured, turned = _scale_to_real(body, lay, front)
 

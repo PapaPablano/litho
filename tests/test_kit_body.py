@@ -129,3 +129,20 @@ def test_the_roof_and_pillars_stay_attached_to_the_shell():
     lay = parts.layout
     cabin_x = lay.length * 0.05                       # the stand-in's cabin centre, scaled with the body
     assert _has_material(out.shell, [cabin_x, 0.0, lay.height - 0.6])
+
+
+def test_a_subject_with_no_windows_is_refused_with_a_clear_message(tmp_path):
+    f = tmp_path / "nowindows.yaml"
+    base = open(subject.SUBJECTS / "mini_countryman.yaml", encoding="utf-8").read()
+    start = base.index("  windows:")
+    end = base.index("  sources:")
+    f.write_text(base[:start] + base[end:], encoding="utf-8")
+    parts = kit_parts.build_parts(str(f))
+    with pytest.raises(ValueError, match="windows"):
+        kit_body.conform_body(_stand_in_body(), parts, str(f))
+
+
+def test_an_unknown_front_value_is_refused():
+    parts = kit_parts.build_parts("mini_countryman")
+    with pytest.raises(ValueError, match="front"):
+        kit_body.conform_body(_stand_in_body(), parts, "mini_countryman", front="left")

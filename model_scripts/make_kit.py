@@ -74,6 +74,10 @@ def main(argv=None):
     except (FileNotFoundError, ValueError) as e:
         print(e)
         return 1
+    except ImportError as e:
+        print(f"{e}")
+        print("Run this in the AI environment: tools/venv-gen/Scripts/python model_scripts/make_kit.py ...")
+        return 1
 
     report = kit_check.check_kit(parts, conformed.shell, a.subject, bed_mm=a.bed_mm)
     print(f"{'':8}{'target mm':>9}{'built':>9}{'error':>9}")
