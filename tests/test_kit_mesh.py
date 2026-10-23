@@ -68,3 +68,9 @@ def test_loading_an_stl_keeps_only_real_parts_and_returns_a_solid(tmp_path):
     out = kit_mesh.load_solid(path, name="body")
     assert out.is_volume
     assert out.extents == pytest.approx([100, 40, 30])
+
+
+def test_overlap_volume_is_zero_for_apart_solids_and_safe_when_nothing_overlaps():
+    a, b = _box((10, 10, 10)), _box((10, 10, 10), center=(30, 0, 0))
+    assert kit_mesh.overlap_volume(a, b) == 0.0
+    assert kit_mesh.overlap_volume(a, _box((10, 10, 10), center=(5, 0, 0))) == pytest.approx(500)

@@ -124,3 +124,10 @@ def intersect(*meshes, name="intersection"):
     import trimesh
     _check(meshes, name)
     return trimesh.boolean.intersection(list(meshes), engine="manifold")
+
+
+def overlap_volume(a, b):
+    """Volume shared by two solids; 0.0 when they do not touch."""
+    import trimesh
+    out = trimesh.boolean.intersection([a, b], engine="manifold")
+    return float(out.volume) if len(out.faces) else 0.0
