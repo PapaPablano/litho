@@ -231,3 +231,7 @@ def _interior(lay, posts):
         bore = _cylinder(joint.socket_radius, joint.length + joint.clearance + EPS, joint.base - [0, 0, EPS], [0, 0, 1])
         interior = kit_mesh.subtract(interior, bore, "interior")
     return interior
+
+
+# shared with kit_body, which cuts the body around these parts
+cylinder, box = _cylinder, _box
